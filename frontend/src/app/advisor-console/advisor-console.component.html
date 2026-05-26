@@ -1,0 +1,366 @@
+<!-- ══════════════════════════════════════════════════════════
+     ÉCRAN DE LOGIN CONSEILLER
+     ══════════════════════════════════════════════════════════ -->
+<div class="sr-only" aria-live="polite" aria-atomic="true">{{ liveAnnouncement }}</div>
+
+<div *ngIf="!isLoggedIn" class="login-page" role="main" aria-label="Connexion conseiller">
+  <div class="login-card">
+    <div class="login-logo">
+      <span class="logo-icon">Y</span>
+      <div>
+        <h1>YCYW Support</h1>
+        <p>Espace Conseiller</p>
+      </div>
+    </div>
+
+    <div class="login-form">
+      <div class="form-field">
+        <label for="loginId">Identifiant agent</label>
+        <input id="loginId" type="text" [(ngModel)]="loginId"
+               placeholder="ex: agent-001"
+               autocomplete="username"
+               (keyup.enter)="login()">
+      </div>
+      <div class="form-field">
+        <label for="loginPassword">Mot de passe</label>
+        <input id="loginPassword" type="password" [(ngModel)]="loginPassword"
+               placeholder="••••••••"
+               autocomplete="current-password"
+               (keyup.enter)="login()">
+      </div>
+      <p class="login-error" *ngIf="loginError">{{ loginError }}</p>
+      <button class="btn-login" (click)="login()"
+              [disabled]="!loginId || !loginPassword">
+        Se connecter
+      </button>
+      <p class="login-hint">
+        <strong>PoC :</strong> agent-001 / ycyw2024 &nbsp;|&nbsp; agent-002 / ycyw2024
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     DASHBOARD CONSEILLER
+     ══════════════════════════════════════════════════════════ -->
+<div *ngIf="isLoggedIn" class="dashboard" role="main" aria-label="Console conseiller">
+
+  <!-- ── TOP BAR ─────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <span class="logo-icon-sm">Y</span>
+      <span class="topbar-title">Console Conseiller</span>
+    </div>
+    <div class="topbar-center">
+      <span class="queue-chip" [class.urgent]="waitQueue.length > 2">
+        <span class="dot-pulse"></span>
+        <span class="queue-chip-label">{{ waitQueue.length }} en attente</span>
+        <span class="queue-chip-label--long">{{ waitQueue.length }} client{{ waitQueue.length !== 1 ? 's' : '' }} en attente</span>
+      </span>
+      <span class="notif-badge-global" *ngIf="totalUnread > 0" role="status" aria-live="polite">
+        {{ totalUnread }} nouveau{{ totalUnread > 1 ? 'x' : '' }} message{{ totalUnread > 1 ? 's' : '' }}
+      </span>
+    </div>
+    <div class="topbar-right">
+      <div class="agent-info">
+        <div class="avatar">{{ agentName[0] }}</div>
+        <div>
+          <p class="agent-name">{{ agentName }}</p>
+          <p class="agent-id">{{ agentId }}</p>
+        </div>
+      </div>
+      <button type="button" class="btn-logout" (click)="logout()" aria-label="Déconnexion">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"
+             fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── CORPS DU DASHBOARD ──────────────────────────────── -->
+  <div class="dashboard-body" [class]="'panel-' + mobilePanel">
+
+    <!-- ── COLONNE GAUCHE : FILE D'ATTENTE ──────────────── -->
+    <aside class="sidebar-left" aria-label="File d'attente des clients">
+      <div class="sidebar-header">
+        <h2 id="queue-heading">File d'attente</h2>
+        <button type="button" class="btn-refresh" (click)="refreshQueue()" aria-label="Rafraîchir la file d'attente">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
+               fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="capacity-bar">
+        <span>{{ activeTabs.length }}/{{ maxConcurrent }} conversations actives</span>
+        <div class="bar-track">
+          <div class="bar-fill" [style.width.%]="(activeTabs.length / maxConcurrent) * 100"
+               [class.full]="activeTabs.length >= maxConcurrent"></div>
+        </div>
+      </div>
+
+      <div class="queue-list" *ngIf="waitQueue.length > 0" role="list" aria-labelledby="queue-heading">
+        <div class="queue-card" *ngFor="let session of waitQueue; let i = index" role="listitem">
+          <div class="queue-card-header">
+            <div class="queue-pos">{{ i + 1 }}</div>
+            <div class="queue-info">
+              <p class="queue-client-name">{{ getCustomerName(session) }}</p>
+              <p class="queue-subject">{{ session.subject }}</p>
+              <p class="queue-time">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="11" height="11"
+                     fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                Attente : {{ getWaitDuration(session.createdAt) }}
+              </p>
+            </div>
+          </div>
+          <button type="button" class="btn-assign"
+                  [disabled]="activeTabs.length >= maxConcurrent"
+                  [attr.aria-label]="'Prendre en charge ' + getCustomerName(session) + ' : ' + session.subject"
+                  (click)="assignSession(session)">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13"
+                 fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            Prendre en charge
+          </button>
+        </div>
+      </div>
+
+      <div class="queue-empty" *ngIf="waitQueue.length === 0">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="40" height="40"
+             fill="none" stroke="#94a3b8" stroke-width="1.5">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <p>Aucun client en attente</p>
+      </div>
+    </aside>
+
+    <!-- ── COLONNE CENTRALE : CONVERSATIONS ─────────────── -->
+    <main class="main-area">
+
+      <!-- Onglets -->
+      <div class="tabs-bar" *ngIf="activeTabs.length > 0" role="tablist" aria-label="Conversations actives">
+        <div class="tab-item" *ngFor="let tab of activeTabs">
+          <button type="button" class="tab-btn"
+                  role="tab"
+                  [id]="'tab-' + tab.session.id"
+                  [attr.aria-selected]="tab.session.id === currentTabId"
+                  [attr.aria-controls]="'panel-' + tab.session.id"
+                  [class.active]="tab.session.id === currentTabId"
+                  (click)="selectTab(tab.session.id)">
+            <span class="tab-label">{{ getCustomerName(tab.session) | slice:0:18 }}{{ getCustomerName(tab.session).length > 18 ? '…' : '' }}</span>
+            <span class="tab-badge" *ngIf="tab.unread > 0" [attr.aria-label]="tab.unread + ' messages non lus'">{{ tab.unread }}</span>
+          </button>
+          <button type="button" class="tab-close"
+                  (click)="closeTab(tab, $event)"
+                  [attr.aria-label]="'Fermer la conversation avec ' + getCustomerName(tab.session)">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Zone de chat active -->
+      <div class="chat-panel" *ngIf="currentTab"
+           role="tabpanel"
+           [id]="'panel-' + currentTab.session.id"
+           [attr.aria-labelledby]="'tab-' + currentTab.session.id">
+
+        <!-- En-tête de la conversation -->
+        <div class="chat-panel-header">
+          <button type="button" class="btn-back-mobile"
+                  (click)="showMobilePanel('queue')"
+                  aria-label="Retour à la file d'attente">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20"
+                 fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
+          <div class="chat-panel-title">
+            <h3>{{ getCustomerName(currentTab.session) }}</h3>
+            <p class="chat-subject-line">{{ currentTab.session.subject }}</p>
+            <span class="status-pill active" role="status">En cours</span>
+          </div>
+          <button type="button" class="btn-close-conv"
+                  (click)="closeTab(currentTab, $event)"
+                  aria-label="Terminer la conversation avec le client">
+            <span class="btn-close-conv--short">Terminer</span>
+            <span class="btn-close-conv--long">Terminer la conversation</span>
+          </button>
+        </div>
+
+        <!-- Messages -->
+        <div
+          class="messages-area"
+          #msgArea
+          role="log"
+          aria-live="polite"
+          aria-atomic="false"
+          aria-label="Historique des messages"
+          aria-relevant="additions"
+          tabindex="0">
+          <div class="msg-day-separator" aria-hidden="true">Aujourd'hui</div>
+
+          <div *ngFor="let msg of currentTab.messages"
+               class="msg-row"
+               [class.agent-row]="msg.senderType === 'agent'"
+               [class.customer-row]="msg.senderType === 'customer'">
+            <div class="msg-avatar" *ngIf="msg.senderType === 'customer'"
+                 [attr.aria-label]="getCustomerName(currentTab.session)"
+                 [attr.title]="getCustomerName(currentTab.session)">
+              {{ getCustomerName(currentTab.session)[0] }}
+            </div>
+            <div class="msg-bubble-wrap">
+              <span class="msg-sender" *ngIf="msg.senderType === 'customer'">{{ msg.senderName }}</span>
+              <div class="msg-bubble" [class.agent]="msg.senderType === 'agent'">
+                {{ msg.messageText }}
+              </div>
+            </div>
+            <div class="msg-avatar agent-av" *ngIf="msg.senderType === 'agent'">
+              {{ agentName[0] }}
+            </div>
+          </div>
+
+          <!-- Indicateur de saisie -->
+          <div class="typing-row" *ngIf="currentTab.isTyping" role="status" aria-label="Le client est en train d'écrire">
+            <div class="msg-avatar" aria-hidden="true">C</div>
+            <div class="typing-bubble">
+              <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+            </div>
+          </div>
+
+          <!-- Placeholder si pas de messages -->
+          <div class="no-msg" *ngIf="currentTab.messages.length === 0">
+            <p>La conversation vient de démarrer. Dites bonjour ! 👋</p>
+          </div>
+        </div>
+
+        <!-- Saisie -->
+        <div class="input-bar">
+          <label class="sr-only" for="advisor-message-input">Répondre au client</label>
+          <textarea
+            id="advisor-message-input"
+            [(ngModel)]="messageText"
+            (keydown)="onAdvisorMessageKeydown($event)"
+            [disabled]="!canWrite"
+            [attr.aria-disabled]="!canWrite"
+            placeholder="Répondre au client (Entrée pour envoyer, Maj+Entrée pour saut de ligne)"
+            rows="2"
+            class="msg-input"
+            aria-describedby="advisor-input-hint"></textarea>
+          <p id="advisor-input-hint" class="input-hint-advisor">Entrée pour envoyer, Maj+Entrée pour un saut de ligne</p>
+          <button
+            type="button"
+            class="btn-send"
+            (click)="sendMessage()"
+            [disabled]="!canWrite || !messageText.trim()"
+            aria-label="Envoyer le message au client">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"
+                 fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Placeholder si aucune conv sélectionnée -->
+      <div class="empty-main" *ngIf="!currentTab">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64"
+             fill="none" stroke="#cbd5e1" stroke-width="1">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <h3>Aucune conversation active</h3>
+        <p>Prenez en charge un client depuis la file d'attente.</p>
+        <button type="button" class="btn-go-queue" (click)="showMobilePanel('queue')">
+          Voir la file d'attente
+        </button>
+      </div>
+    </main>
+
+    <!-- ── COLONNE DROITE : CONTEXTE CLIENT ─────────────── -->
+    <aside class="sidebar-right" *ngIf="currentTab">
+      <div class="sidebar-header">
+        <h2>Contexte client</h2>
+      </div>
+
+      <div class="client-card">
+        <div class="client-avatar" aria-hidden="true">
+          {{ currentTab.customerContext.name[0] }}
+        </div>
+        <div>
+          <p class="client-name">{{ currentTab.customerContext.name }}</p>
+          <p class="client-email">{{ currentTab.customerContext.email }}</p>
+          <span class="client-badge">Client Premium</span>
+        </div>
+      </div>
+
+      <div class="section-title">Réservations récentes</div>
+
+      <div class="reservation-card" *ngFor="let res of currentTab.customerContext.reservations">
+        <div class="res-icon" [class]="res.status">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
+               fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8z"/>
+            <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+          </svg>
+        </div>
+        <div class="res-details">
+          <p class="res-vehicle">{{ res.vehicle }}</p>
+          <p class="res-meta">{{ res.location }} · {{ res.date }}</p>
+        </div>
+        <span class="res-status" [class]="res.status">
+          {{ res.status === 'completed' ? 'Terminée' : res.status === 'upcoming' ? 'À venir' : 'En cours' }}
+        </span>
+      </div>
+
+      <div class="quick-actions">
+        <p class="section-title">Actions rapides</p>
+        <button type="button" class="action-btn warning" aria-label="Signaler un problème pour ce client">⚠ Signaler un problème</button>
+        <button type="button" class="action-btn neutral" aria-label="Voir le profil complet du client">📋 Voir le profil complet</button>
+      </div>
+    </aside>
+
+    <aside class="sidebar-right empty-ctx" *ngIf="!currentTab" aria-label="Contexte client">
+      <p>Sélectionnez une conversation pour voir le contexte client.</p>
+    </aside>
+
+  </div>
+
+  <nav class="mobile-nav" aria-label="Navigation mobile">
+    <button type="button"
+            class="mobile-nav-btn"
+            [class.active]="isMobilePanelActive('queue')"
+            [attr.aria-current]="isMobilePanelActive('queue') ? 'page' : null"
+            (click)="showMobilePanel('queue')">
+      <span class="mobile-nav-icon" aria-hidden="true">📋</span>
+      <span>File</span>
+      <span class="mobile-nav-badge" *ngIf="waitQueue.length > 0">{{ waitQueue.length }}</span>
+    </button>
+    <button type="button"
+            class="mobile-nav-btn"
+            [class.active]="isMobilePanelActive('chat')"
+            [attr.aria-current]="isMobilePanelActive('chat') ? 'page' : null"
+            (click)="showMobilePanel('chat')">
+      <span class="mobile-nav-icon" aria-hidden="true">💬</span>
+      <span>Chat</span>
+      <span class="mobile-nav-badge" *ngIf="totalUnread > 0">{{ totalUnread }}</span>
+    </button>
+    <button type="button"
+            class="mobile-nav-btn"
+            [class.active]="isMobilePanelActive('context')"
+            [disabled]="!currentTab"
+            [attr.aria-current]="isMobilePanelActive('context') ? 'page' : null"
+            (click)="showMobilePanel('context')">
+      <span class="mobile-nav-icon" aria-hidden="true">👤</span>
+      <span>Client</span>
+    </button>
+  </nav>
+</div>

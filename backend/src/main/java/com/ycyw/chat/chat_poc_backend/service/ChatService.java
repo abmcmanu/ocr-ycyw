@@ -3,14 +3,18 @@ package com.ycyw.chat.chat_poc_backend.service;
 import com.ycyw.chat.chat_poc_backend.config.RedisConfig;
 import com.ycyw.chat.chat_poc_backend.domain.ChatMessage;
 import com.ycyw.chat.chat_poc_backend.dto.ChatMessageDTO;
+import com.ycyw.chat.chat_poc_backend.dto.SessionStatusDTO;
 import com.ycyw.chat.chat_poc_backend.dto.TypingIndicatorDTO;
 import com.ycyw.chat.chat_poc_backend.repository.ChatMessageRepository;
+import com.ycyw.chat.chat_poc_backend.repository.ChatThreadRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Service
 public class ChatService {
@@ -18,14 +22,28 @@ public class ChatService {
     private static final Logger logger = LoggerFactory.getLogger(ChatService.class);
 
     private final ChatMessageRepository chatMessageRepository;
+    private final ChatThreadRepository chatThreadRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public ChatService(ChatMessageRepository chatMessageRepository, RedisTemplate<String, Object> redisTemplate) {
+    public ChatService(
+            ChatMessageRepository chatMessageRepository,
+            ChatThreadRepository chatThreadRepository,
+            RedisTemplate<String, Object> redisTemplate,
+            SimpMessagingTemplate messagingTemplate) {
         this.chatMessageRepository = chatMessageRepository;
+        this.chatThreadRepository = chatThreadRepository;
         this.redisTemplate = redisTemplate;
+        this.messagingTemplate = messagingTemplate;
     }
 
     public void processAndBroadcastMessage(ChatMessageDTO dto) {
+        if (isThreadClosed(dto.getThreadId())) {
+            logger.warn("Message ignoré : le thread {} est clôturé", dto.getThreadId());
+            notifyThreadClosed(dto.getThreadId());
+            return;
+        }
+
         // 1. Persister le message en DB
         ChatMessage message = new ChatMessage();
         message.setThreadId(dto.getThreadId());
@@ -45,7 +63,20 @@ public class ChatService {
     }
 
     public void broadcastTypingIndicator(TypingIndicatorDTO dto) {
-        // Pas de persistance pour les indicateurs de frappe, on diffuse directement
+        if (isThreadClosed(dto.getThreadId())) {
+            return;
+        }
         redisTemplate.convertAndSend(RedisConfig.TYPING_TOPIC, dto);
+    }
+
+    private boolean isThreadClosed(UUID threadId) {
+        return chatThreadRepository.findById(threadId)
+                .map(thread -> "closed".equals(thread.getStatus()))
+                .orElse(true);
+    }
+
+    private void notifyThreadClosed(UUID threadId) {
+        SessionStatusDTO statusEvent = new SessionStatusDTO(threadId, "closed", null, null);
+        messagingTemplate.convertAndSend("/topic/session/" + threadId + "/status", statusEvent);
     }
 }

@@ -21,9 +21,11 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             // Désactivation temporaire de la protection CSRF pour le POC
             .csrf(csrf -> csrf.disable())
-            // Autoriser l'accès anonyme au endpoint WebSocket
+            // Autoriser l'accès anonyme au endpoint WebSocket, API REST et Swagger
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/ws/**").permitAll()
+                .requestMatchers("/api/chat/**").permitAll()
+                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .anyRequest().permitAll()
             )
             // Désactiver l'authentification HTTP Basic (la popup de login)

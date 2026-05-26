@@ -1,24 +1,10 @@
-<div style="padding: 20px; font-family: Arial;">
-  <h2>YCYW POC Tchat - Etape 2 Test</h2>
-  <div style="margin-bottom: 20px;">
-    <p>Statut : <strong [style.color]="isConnected ? 'green' : 'red'">{{ isConnected ? 'Connecté' : 'Déconnecté' }}</strong></p>
-    <button (click)="connect()" [disabled]="isConnected">Connecter</button>
-    <button (click)="disconnect()" [disabled]="!isConnected">Déconnecter</button>
-    <br><br>
-    <small>Pour simuler une coupure réseau : arrêtez le backend Spring Boot puis redémarrez-le.<br> Le client Angular tentera de se reconnecter automatiquement toutes les 5 secondes (grace au <code>reconnectDelay</code>).</small>
-  </div>
-
-  <div style="border: 1px solid #ccc; height: 300px; width: 400px; overflow-y: auto; padding: 10px; margin-bottom: 10px; background-color: #f9f9f9; border-radius: 5px;">
-    <div *ngFor="let msg of messages" style="margin-bottom: 10px; padding: 5px; background: white; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
-      <strong style="color: #0056b3;">{{ msg.senderName }}:</strong> {{ msg.messageText }}
-    </div>
-    <div *ngIf="isSomeoneTyping" style="color: gray; font-style: italic; font-size: 0.9em;">
-      Quelqu'un est en train d'écrire...
-    </div>
-  </div>
-
-  <div>
-    <input type="text" [(ngModel)]="messageText" (input)="onTyping()" (keyup.enter)="sendMessage()" [disabled]="!isConnected" placeholder="Tapez un message..." style="width: 300px; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-    <button (click)="sendMessage()" [disabled]="!isConnected || !messageText.trim()" style="padding: 8px 15px; margin-left: 5px; background-color: #0056b3; color: white; border: none; border-radius: 4px; cursor: pointer;">Envoyer</button>
-  </div>
-</div>
+<main id="main-content">
+  <router-outlet></router-outlet>
+</main>
+<footer class="app-seo-footer" role="contentinfo">
+  <nav aria-label="Navigation du site">
+    <a routerLink="/">Support client</a>
+    <span class="sep" aria-hidden="true">·</span>
+    <a routerLink="/advisor">Espace conseiller</a>
+  </nav>
+</footer>

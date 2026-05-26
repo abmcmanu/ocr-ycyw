@@ -1,0 +1,166 @@
+<div class="ycyw-chat-container" role="region" aria-labelledby="chat-widget-title">
+
+  <header class="chat-header">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">Y</div>
+      <div>
+        <h2 id="chat-widget-title">Support YCYW</h2>
+        <span class="status-indicator" [class.connected]="isConnected" role="status">
+          {{ isConnected ? 'En ligne' : 'Déconnecté' }}
+        </span>
+      </div>
+    </div>
+    <button
+      *ngIf="isConnected"
+      type="button"
+      class="btn-close"
+      (click)="disconnect()"
+      aria-label="Fermer la connexion au tchat">
+      <span aria-hidden="true">✕</span>
+    </button>
+  </header>
+
+  <!-- Annonces lecteur d'écran -->
+  <div class="sr-only" aria-live="polite" aria-atomic="true">{{ liveAnnouncement }}</div>
+
+  <!-- Formulaire de démarrage -->
+  <div
+    *ngIf="!isSessionCreated"
+    class="chat-body login-screen"
+    role="form"
+    aria-label="Démarrer une conversation avec le support">
+
+    <p class="welcome-text" id="welcome-desc">
+      Bienvenue chez YCYW. Comment pouvons-nous vous aider aujourd'hui ?
+    </p>
+
+    <div class="form-group row">
+      <div class="col">
+        <label for="chat-firstname">Prénom</label>
+        <input
+          #firstNameInput
+          id="chat-firstname"
+          type="text"
+          [(ngModel)]="firstName"
+          placeholder="Jean"
+          autocomplete="given-name"
+          aria-required="true">
+      </div>
+      <div class="col">
+        <label for="chat-lastname">Nom</label>
+        <input
+          id="chat-lastname"
+          type="text"
+          [(ngModel)]="lastName"
+          placeholder="Dupont"
+          autocomplete="family-name">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="chat-email">Email</label>
+      <input
+        id="chat-email"
+        type="email"
+        [(ngModel)]="email"
+        placeholder="jean.dupont@example.com"
+        autocomplete="email"
+        aria-required="true">
+    </div>
+
+    <div class="form-group">
+      <label for="chat-subject">Sujet</label>
+      <input
+        id="chat-subject"
+        type="text"
+        [(ngModel)]="subject"
+        placeholder="Ex: Problème de réservation"
+        aria-required="true"
+        aria-describedby="welcome-desc">
+    </div>
+
+    <button
+      type="button"
+      class="btn-primary start-btn"
+      (click)="startChatSession()"
+      [disabled]="!email || !firstName || !subject"
+      aria-label="Démarrer le tchat avec le support">
+      Démarrer le tchat
+    </button>
+  </div>
+
+  <!-- Conversation active -->
+  <div *ngIf="isSessionCreated" class="chat-active" aria-label="Conversation de support en cours">
+
+    <div *ngIf="sessionStatus === 'waiting'" class="queue-banner" role="status">
+      <div class="spinner" aria-hidden="true"></div>
+      <div>
+        <strong>Recherche d'un conseiller…</strong>
+        <p>Position : {{ queuePosition }} • Attente estimée : ~{{ estimatedWaitTime }} min</p>
+      </div>
+    </div>
+
+    <div *ngIf="sessionStatus === 'in_progress'" class="advisor-connected-banner" role="status">
+      <span class="connected-dot" aria-hidden="true"></span>
+      <strong>{{ assignedAgentName }}</strong> est en ligne et vous répond
+    </div>
+
+    <div *ngIf="isClosed" class="closed-banner" role="status">
+      <strong>Conversation terminée</strong>
+      <p>Le conseiller a clôturé cette discussion. Pour une nouvelle demande, rechargez la page.</p>
+    </div>
+
+    <div
+      #messagesContainer
+      class="messages-container"
+      role="log"
+      aria-live="polite"
+      aria-atomic="false"
+      aria-label="Historique des messages"
+      aria-relevant="additions"
+      tabindex="0">
+
+      <div
+        *ngFor="let msg of messages; let i = index"
+        class="message-wrapper"
+        [class.mine]="msg.senderType === 'customer'"
+        [attr.aria-label]="msg.senderType === 'customer' ? 'Votre message' : 'Message de ' + msg.senderName">
+        <div class="message-bubble">
+          <span class="sender-name" *ngIf="msg.senderType !== 'customer'">{{ msg.senderName }}</span>
+          <p>{{ msg.messageText }}</p>
+        </div>
+      </div>
+
+      <div *ngIf="isSomeoneTyping" class="typing-indicator" role="status" aria-label="Le conseiller est en train d'écrire">
+        <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <label class="sr-only" for="chat-message-input">Votre message</label>
+      <textarea
+        #messageInput
+        id="chat-message-input"
+        [(ngModel)]="messageText"
+        (input)="onTyping()"
+        (keydown)="onMessageKeydown($event)"
+        [disabled]="!canWrite"
+        [readonly]="isClosed"
+        [attr.aria-disabled]="!canWrite"
+        rows="2"
+        [attr.placeholder]="isClosed ? 'Conversation terminée' : 'Écrivez votre message (Entrée pour envoyer, Maj+Entrée pour saut de ligne)'"
+        aria-describedby="input-hint"></textarea>
+      <p id="input-hint" class="input-hint">Entrée pour envoyer, Maj+Entrée pour un saut de ligne</p>
+      <button
+        type="button"
+        class="btn-send"
+        (click)="sendMessage()"
+        [disabled]="!canWrite || !messageText.trim()"
+        aria-label="Envoyer le message">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>

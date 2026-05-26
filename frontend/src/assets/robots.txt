@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Allow: /advisor
+
+Sitemap: http://localhost:4200/sitemap.xml

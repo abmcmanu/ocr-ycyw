@@ -12,10 +12,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Point d'entrée pour la connexion WebSocket, avec support SockJS en fallback
+        // WebSocket natif (STOMP) — sans SockJS pour éviter les listeners `unload` dépréciés côté client
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")
-                .withSockJS();
+                .setAllowedOriginPatterns("*");
     }
 
     @Override

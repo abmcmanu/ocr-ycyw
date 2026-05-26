@@ -1,0 +1,50 @@
+#main-content {
+  min-height: 100dvh;
+}
+
+.app-seo-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  pointer-events: none;
+  padding: 6px 12px;
+  padding-bottom: max(6px, env(safe-area-inset-bottom));
+  text-align: center;
+  font-size: 0.68rem;
+  background: linear-gradient(transparent, rgba(241, 245, 249, 0.95) 40%);
+
+  nav {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  a {
+    color: #475569;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+
+    &:hover {
+      color: #1e293b;
+    }
+  }
+
+  .sep {
+    color: #94a3b8;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-seo-footer {
+    position: static;
+    background: #f1f5f9;
+    border-top: 1px solid #e2e8f0;
+    padding: 10px;
+    pointer-events: auto;
+  }
+}

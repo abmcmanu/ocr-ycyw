@@ -1,0 +1,17 @@
+{
+  "name": "YCYW Support",
+  "short_name": "YCYW",
+  "description": "Support client et console conseiller YCYW",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F1F5F9",
+  "theme_color": "#0F172A",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}
