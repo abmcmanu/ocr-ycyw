@@ -17,6 +17,7 @@ public class RedisConfig {
     public static final String CHAT_TOPIC = "chat_messages_topic";
     public static final String TYPING_TOPIC = "chat_typing_topic";
 
+    @SuppressWarnings("deprecation")
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();

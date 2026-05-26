@@ -24,9 +24,7 @@ public class RedisMessageSubscriber {
         ObjectMapper objectMapper = new ObjectMapper();
         return new MessageListenerAdapter((MessageListener) (message, pattern) -> {
             try {
-                // Désérialiser le message
-                // Le message venant de Redis via GenericJackson2JsonRedisSerializer contient des quotes si string
-                // Spring cache parfois la structure, l'ObjectMapper résout proprement.
+                // Désérialiser le message + Spring cache parfois la structure, l'ObjectMapper résout proprement.
                 String body = new String(message.getBody());
                 // Enlever les guillemets si c'est une string encodée JSON
                 if (body.startsWith("\"") && body.endsWith("\"")) {

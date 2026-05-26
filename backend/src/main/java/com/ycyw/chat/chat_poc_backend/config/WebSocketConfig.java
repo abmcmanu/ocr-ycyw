@@ -14,7 +14,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // Point d'entrée pour la connexion WebSocket, avec support SockJS en fallback
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*") // En production, restreindre à l'origine Angular
+                .setAllowedOriginPatterns("*")
                 .withSockJS();
     }
 
