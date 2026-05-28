@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import com.ycyw.chat.chat_poc_backend.dto.ChatMessageDTO;
 
 @RestController
 @RequestMapping("/api/advisor")

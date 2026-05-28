@@ -10,14 +10,17 @@
         </span>
       </div>
     </div>
-    <button
-      *ngIf="isConnected"
-      type="button"
-      class="btn-close"
-      (click)="disconnect()"
-      aria-label="Fermer la connexion au tchat">
-      <span aria-hidden="true">✕</span>
-    </button>
+    <nav class="header-actions" aria-label="Actions du tchat">
+      <a routerLink="/profile/history" class="btn-history">Mon historique</a>
+      <button
+        *ngIf="isConnected"
+        type="button"
+        class="btn-close"
+        (click)="disconnect()"
+        aria-label="Fermer la connexion au tchat">
+        <span aria-hidden="true">✕</span>
+      </button>
+    </nav>
   </header>
 
   <!-- Annonces lecteur d'écran -->

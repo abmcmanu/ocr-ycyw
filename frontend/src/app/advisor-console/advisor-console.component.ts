@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
+import { AuthService } from '../core/auth.service';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import {
@@ -51,7 +52,7 @@ export type MobilePanel = 'queue' | 'chat' | 'context';
 @Component({
   selector: 'app-advisor-console',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule, DatePipe],
+  imports: [CommonModule, FormsModule, DatePipe],
   templateUrl: './advisor-console.component.html',
   styleUrls: ['./advisor-console.component.scss']
 })
@@ -82,7 +83,11 @@ export class AdvisorConsoleComponent implements OnInit, OnDestroy {
   private audioCtx: AudioContext | null = null;
   private lastNotifiedAt = 0;
 
-  constructor(private http: HttpClient, private wsService: ChatWebsocketService) {}
+  constructor(
+    private http: HttpClient,
+    private wsService: ChatWebsocketService,
+    private auth: AuthService
+  ) {}
 
   ngOnInit(): void {
     // L'agent doit se connecter d'abord — pas d'init auto
@@ -91,22 +96,20 @@ export class AdvisorConsoleComponent implements OnInit, OnDestroy {
   // ─── AUTH MOCK ───────────────────────────────────────────────────────────────
 
   login() {
-    // Credentials mock pour le PoC (remplacera JWT en étape 7)
-    const validAgents: Record<string, { name: string; password: string }> = {
-      'agent-001': { name: 'Sophie Martin', password: 'ycyw2024' },
-      'agent-002': { name: 'Thomas Leclerc', password: 'ycyw2024' },
-    };
-    const agent = validAgents[this.loginId];
-    if (agent && agent.password === this.loginPassword) {
+    this.auth.loginAdvisor(this.loginId, this.loginPassword).then(() => {
+      const names: Record<string, string> = {
+        'agent-001': 'Sophie Martin',
+        'agent-002': 'Thomas Leclerc',
+      };
       this.agentId = this.loginId;
-      this.agentName = agent.name;
+      this.agentName = names[this.loginId] ?? this.loginId;
       this.isLoggedIn = true;
       this.loginError = '';
       this._initAudioContext();
       this._initAfterLogin();
-    } else {
+    }).catch(() => {
       this.loginError = 'Identifiant ou mot de passe incorrect.';
-    }
+    });
   }
 
   private _initAfterLogin(): void {
@@ -160,6 +163,7 @@ export class AdvisorConsoleComponent implements OnInit, OnDestroy {
     this.msgSubscription?.unsubscribe();
     this.typingSubscription?.unsubscribe();
     this.wsService.disconnect();
+    this.auth.logout();
     this.isLoggedIn = false;
     this.waitQueue = [];
     this.activeTabs = [];

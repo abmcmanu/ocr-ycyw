@@ -2,9 +2,9 @@ spring:
   application:
     name: chat-poc-backend
   datasource:
-    url: jdbc:postgresql://localhost:5433/ycyw_chat
-    username: ycyw
-    password: password
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/ycyw_chat}
+    username: ${DB_USERNAME:ycyw}
+    password: ${DB_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -19,11 +19,11 @@ spring:
     baseline-on-migrate: true
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
 server:
-  port: 8081
+  port: ${SERVER_PORT:8081}
 
 management:
   endpoints:
@@ -32,8 +32,18 @@ management:
         include: health,info,prometheus
   endpoint:
     health:
-      show-details: always
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
-jwt:
-  secret: YCYW_Chat_POC_SecretKey_VeryLongString_For_HS256_Encryption
-  expiration: 86400000 # 24h en ms
+app:
+  security:
+    cors-origins:
+      - ${CORS_ORIGIN:http://localhost:4200}
+    jwt-secret: ${JWT_SECRET:YCYW_Chat_POC_SecretKey_VeryLongString_For_HS256_Encryption_Min32}
+    jwt-expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+    rate-limit-per-minute: ${RATE_LIMIT_PER_MINUTE:120}
+
+chat:
+  retention-months: ${CHAT_RETENTION_MONTHS:12}

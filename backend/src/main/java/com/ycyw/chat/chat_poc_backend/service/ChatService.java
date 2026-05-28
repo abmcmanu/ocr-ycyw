@@ -5,8 +5,10 @@ import com.ycyw.chat.chat_poc_backend.domain.ChatMessage;
 import com.ycyw.chat.chat_poc_backend.dto.ChatMessageDTO;
 import com.ycyw.chat.chat_poc_backend.dto.SessionStatusDTO;
 import com.ycyw.chat.chat_poc_backend.dto.TypingIndicatorDTO;
+import com.ycyw.chat.chat_poc_backend.metrics.ChatMetrics;
 import com.ycyw.chat.chat_poc_backend.repository.ChatMessageRepository;
 import com.ycyw.chat.chat_poc_backend.repository.ChatThreadRepository;
+import com.ycyw.chat.chat_poc_backend.util.MessageSanitizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -25,16 +27,19 @@ public class ChatService {
     private final ChatThreadRepository chatThreadRepository;
     private final RedisTemplate<String, Object> redisTemplate;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ChatMetrics chatMetrics;
 
     public ChatService(
             ChatMessageRepository chatMessageRepository,
             ChatThreadRepository chatThreadRepository,
             RedisTemplate<String, Object> redisTemplate,
-            SimpMessagingTemplate messagingTemplate) {
+            SimpMessagingTemplate messagingTemplate,
+            ChatMetrics chatMetrics) {
         this.chatMessageRepository = chatMessageRepository;
         this.chatThreadRepository = chatThreadRepository;
         this.redisTemplate = redisTemplate;
         this.messagingTemplate = messagingTemplate;
+        this.chatMetrics = chatMetrics;
     }
 
     public void processAndBroadcastMessage(ChatMessageDTO dto) {
@@ -50,12 +55,13 @@ public class ChatService {
         message.setSenderType(dto.getSenderType());
         message.setSenderId(dto.getSenderId());
         message.setSenderName(dto.getSenderName());
-        message.setMessageText(dto.getMessageText());
+        message.setMessageText(MessageSanitizer.escapeForStorage(dto.getMessageText()));
         message.setMessageType(dto.getMessageType());
         message.setCreatedAt(OffsetDateTime.now());
         message.setRead(false);
         
         chatMessageRepository.save(message);
+        chatMetrics.incrementMessages();
         logger.debug("Message sauvegardé en base de données pour le thread {}", dto.getThreadId());
 
         // 2. Diffuser sur Redis Pub/Sub pour le multi-instances

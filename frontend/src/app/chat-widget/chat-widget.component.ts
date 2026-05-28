@@ -6,20 +6,22 @@ import {
   AfterViewChecked,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { HttpClientModule, HttpClient } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import {
   ChatWebsocketService,
   ChatMessage,
   SessionStatusEvent,
 } from '../shared/chat-websocket.service';
 import { logError } from '../core/logger';
+import { AuthService } from '../core/auth.service';
 import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-chat-widget',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './chat-widget.component.html',
   styleUrls: ['./chat-widget.component.scss'],
 })
@@ -52,7 +54,8 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
 
   constructor(
     private chatService: ChatWebsocketService,
-    private http: HttpClient
+    private http: HttpClient,
+    private auth: AuthService
   ) {}
 
   get canWrite(): boolean {
@@ -153,9 +156,14 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
           this.estimatedWaitTime = res.estimatedWaitTimeMinutes;
           this.sessionStatus = res.status ?? 'waiting';
           this.isSessionCreated = true;
-          this.chatService.connect(this.threadId);
-          this.announce('Session de tchat démarrée. En attente d\'un conseiller.');
-          setTimeout(() => this.messageInput?.nativeElement.focus(), 100);
+          this.auth.loginClient(this.email).then(() => {
+            this.chatService.connect(this.threadId);
+            this.announce('Session de tchat démarrée. En attente d\'un conseiller.');
+            setTimeout(() => this.messageInput?.nativeElement.focus(), 100);
+          }).catch(err => {
+            logError('auth', err);
+            this.announce('Erreur d\'authentification client.');
+          });
         },
         error: err => {
           logError('session', err);

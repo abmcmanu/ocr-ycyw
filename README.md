@@ -17,3 +17,27 @@ Un fichier `docker-compose.yml` est disponible à la racine pour démarrer l'inf
 ```bash
 docker-compose up -d
 ```
+
+## Structure des Données & Migrations
+
+Ce projet utilise **Flyway** pour la gestion et le versioning du schéma de la base de données. Cela permet de garantir la cohérence des structures de données entre tous les environnements (développement, test, production).
+
+* **Emplacement des scripts de migration :** `backend/src/main/resources/db/migration`
+* **Fonctionnement :** À chaque démarrage de l'application, Flyway vérifie et applique automatiquement les nouveaux scripts SQL non encore exécutés.
+
+## Supervision, Health Check & Métriques
+
+Après avoir démarré l'infrastructure avec la commande `docker-compose up -d`, vous pouvez monitorer l'état de l'application grâce aux points d'accès Spring Boot Actuator.
+
+### 1. Vérification de la disponibilité (Health Check)
+Pour valider que l'application tourne correctement et que ses dépendances (base de données, etc.) sont fonctionnelles :
+* **URL :** [http://localhost:8081/actuator/health](http://localhost:8081/actuator/health)
+
+### 2. Métriques de Performance (Prometheus)
+L'application expose des métriques détaillées destinées à être collectées par un serveur Prometheus. Ces données sont protégées et nécessitent un jeton d'accès.
+
+Pour inspecter les 30 premières lignes des métriques exposées, exécutez la commande suivante :
+
+```bash
+curl -s http://localhost:8081/actuator/prometheus \
+  -H "Authorization: Bearer <ACCESS_TOKEN_ICI>" | head -30

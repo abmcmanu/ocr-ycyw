@@ -1,0 +1,36 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  flyway:
+    enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: never
+
+app:
+  security:
+    jwt-secret: "012345678901234567890123456789012345678901234567890123456789"
+    jwt-expiration-ms: 60000
+    rate-limit-per-minute: 500
+    cors-origins:
+      - http://localhost:4200
+
+chat:
+  retention-months: 0
+

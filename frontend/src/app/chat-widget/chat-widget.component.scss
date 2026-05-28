@@ -115,6 +115,26 @@
 }
 .btn-close:hover { color: white; }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-history {
+  color: #e2e8f0;
+  font-size: 0.75rem;
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+
+  &:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
 /* LOGIN SCREEN */
 .login-screen {
   padding: 20px 16px;
