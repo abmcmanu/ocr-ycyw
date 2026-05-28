@@ -49,8 +49,8 @@ export class ChatWebsocketService {
   private readonly subscribedThreads = new Set<string>();
   private readonly threadSubscriptions = new Map<string, StompSubscription[]>();
 
-  constructor() {
-    this.stompClient = new Client({
+  constructor(stompClient?: Client) {
+    this.stompClient = stompClient ?? new Client({
       brokerURL: apiUrlToBrokerUrl(environment.apiUrl),
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
