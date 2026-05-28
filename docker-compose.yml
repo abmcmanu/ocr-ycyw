@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: ycyw_chat
     ports:
-      - "5433:5432"
+      - "5433:5432" # Reste accessible sur le port 5433 depuis votre machine hôte
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -29,9 +29,41 @@ services:
       timeout: 5s
       retries: 5
 
-  # Backend et Frontend seront démarrés localement pour le dév,
-  # ou via Docker si buildés.
-  # Ils peuvent être ajoutés ici ultérieurement.
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: poc-backend
+    ports:
+      - "8081:8081"
+    environment:
+      # URL pointant vers le conteneur postgres sur son port interne 5432
+      DB_URL: jdbc:postgresql://postgres:5432/ycyw_chat
+      DB_USERNAME: ycyw
+      DB_PASSWORD: password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SERVER_PORT: 8081
+      CORS_ORIGIN: http://localhost:4200 # Autorise le conteneur frontend s'il est accédé via localhost:4200
+      JWT_SECRET: YCYW_Chat_POC_SecretKey_VeryLongString_For_HS256_Encryption_Min32
+      JWT_EXPIRATION_MS: 86400000
+      RATE_LIMIT_PER_MINUTE: 120
+      CHAT_RETENTION_MONTHS: 12
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: poc-frontend
+    ports:
+      - "4200:80" # On mappe le port 80 du Nginx interne sur le port 4200 de votre machine
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:

@@ -22,7 +22,7 @@ docker-compose up -d
 
 Ce projet utilise **Flyway** pour la gestion et le versioning du schéma de la base de données. Cela permet de garantir la cohérence des structures de données entre tous les environnements (développement, test, production).
 
-* **Emplacement des scripts de migration :** `backend/src/main/resources/db/migration`
+* **Emplacement des scripts de migration :** [backend/src/main/resources/db/migration](./backend/src/main/resources/db/migration)
 * **Fonctionnement :** À chaque démarrage de l'application, Flyway vérifie et applique automatiquement les nouveaux scripts SQL non encore exécutés.
 
 ## Supervision, Health Check & Métriques

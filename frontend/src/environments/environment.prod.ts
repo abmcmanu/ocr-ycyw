@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://api.ycyw.example.com',
-  siteUrl: 'https://support.ycyw.example.com',
+  apiUrl: 'http://localhost:8081',
+  siteUrl: 'http://localhost:4200',
 };

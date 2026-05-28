@@ -1,6 +1,7 @@
 import {
   Component,
   OnInit,
+  OnDestroy,
   ViewChild,
   ElementRef,
   AfterViewChecked,
@@ -25,7 +26,7 @@ import { environment } from '../../environments/environment';
   templateUrl: './chat-widget.component.html',
   styleUrls: ['./chat-widget.component.scss'],
 })
-export class ChatWidgetComponent implements OnInit, AfterViewChecked {
+export class ChatWidgetComponent implements OnInit, OnDestroy, AfterViewChecked {
   email = '';
   firstName = '';
   lastName = '';
@@ -47,6 +48,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
   liveAnnouncement = '';
   private shouldScrollToBottom = false;
   private wasTyping = false;
+  private statusPollTimer?: ReturnType<typeof setInterval>;
 
   @ViewChild('firstNameInput') firstNameInput?: ElementRef<HTMLInputElement>;
   @ViewChild('messageInput') messageInput?: ElementRef<HTMLTextAreaElement>;
@@ -118,8 +120,15 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
     }
   }
 
+  ngOnDestroy(): void {
+    this.stopStatusPolling();
+  }
+
   private onSessionStatusUpdate(event: SessionStatusEvent): void {
     this.sessionStatus = event.status;
+    if (event.status !== 'waiting') {
+      this.stopStatusPolling();
+    }
     if (event.status === 'in_progress') {
       this.queuePosition = 0;
       this.assignedAgentName = event.agentName ?? 'un conseiller';
@@ -156,13 +165,11 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
           this.estimatedWaitTime = res.estimatedWaitTimeMinutes;
           this.sessionStatus = res.status ?? 'waiting';
           this.isSessionCreated = true;
-          this.auth.loginClient(this.email).then(() => {
-            this.chatService.connect(this.threadId);
-            this.announce('Session de tchat démarrée. En attente d\'un conseiller.');
-            setTimeout(() => this.messageInput?.nativeElement.focus(), 100);
-          }).catch(err => {
+          this.chatService.connect(this.threadId);
+          this.startStatusPolling();
+          this.announce('Session de tchat démarrée. En attente d\'un conseiller.');
+          this.auth.loginClient(this.email).catch(err => {
             logError('auth', err);
-            this.announce('Erreur d\'authentification client.');
           });
         },
         error: err => {
@@ -173,8 +180,43 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
   }
 
   disconnect(): void {
+    this.stopStatusPolling();
     this.chatService.disconnect();
     this.announce('Déconnecté du tchat');
+  }
+
+  private startStatusPolling(): void {
+    this.stopStatusPolling();
+    this.statusPollTimer = setInterval(() => this.pollSessionStatus(), 3000);
+  }
+
+  private stopStatusPolling(): void {
+    if (this.statusPollTimer) {
+      clearInterval(this.statusPollTimer);
+      this.statusPollTimer = undefined;
+    }
+  }
+
+  private pollSessionStatus(): void {
+    if (!this.threadId || this.sessionStatus !== 'waiting') {
+      return;
+    }
+    this.http
+      .get<SessionStatusEvent>(
+        `${environment.apiUrl}/api/chat/sessions/${this.threadId}/status`
+      )
+      .subscribe({
+        next: (res) => {
+          if (res.status && res.status !== 'waiting') {
+            this.onSessionStatusUpdate({
+              threadId: String(res.threadId ?? this.threadId),
+              status: res.status,
+              agentId: res.agentId,
+              agentName: res.agentName,
+            });
+          }
+        },
+      });
   }
 
   sendMessage(): void {
