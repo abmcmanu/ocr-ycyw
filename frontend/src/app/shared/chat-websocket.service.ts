@@ -1,4 +1,4 @@
-import { Injectable, isDevMode } from '@angular/core';
+import { Injectable, isDevMode, Optional } from '@angular/core';
 import { Client, Message, StompSubscription } from '@stomp/stompjs';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { logDebug, logError } from '../core/logger';
@@ -49,7 +49,7 @@ export class ChatWebsocketService {
   private readonly subscribedThreads = new Set<string>();
   private readonly threadSubscriptions = new Map<string, StompSubscription[]>();
 
-  constructor(stompClient?: Client) {
+  constructor(@Optional() stompClient?: Client) {
     this.stompClient = stompClient ?? new Client({
       brokerURL: apiUrlToBrokerUrl(environment.apiUrl),
       reconnectDelay: 5000,
